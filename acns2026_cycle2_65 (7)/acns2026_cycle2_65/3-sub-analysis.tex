@@ -1,0 +1,86 @@
+% !TEX root = main.tex
+\subsection{Analysis}\label{subsection:generic-SMS-analysis}
+
+\begin{theorem}[Security]\label{theorem:SMS-generic-construction-security}
+$\SMSSchemeGeneric$ satisfies correctness, privacy, setup indistinguishability,
+and unforgeability
+(Definitions~\ref{definition:sms-correctness},
+\ref{definition:sms-privacy},
+\ref{definition:sms-setup-indistinguishability},
+and \ref{definition:sms-unforgeability}),
+assuming that $\NIZKAoK$ is a simulation-sound extractable argument of knowledge,
+$\SignatureScheme$ is existentially unforgeable,
+$\OTSScheme$ is strongly unforgeable,
+and $\EncryptionScheme$ is CPA-secure.
+\end{theorem}
+
+\begin{proof}[Sketch]
+Correctness follows directly from the correctness of the underlying primitives.
+We order the properties by logical dependency.
+
+\medskip
+\noindent\textbf{Privacy.}
+The only signature-dependent information visible to the adversary is
+$\ctop$ and $\PiGenericSMS$.
+Since the two candidate signers produce the same $\tM$ and the same $\op$
+(enforced by the privacy experiment),
+$\ctop$ is an encryption of the same value in both cases;
+CPA security of $\EncryptionScheme$ ensures $\ctop$ is indistinguishable.
+The zero-knowledge property of the $\NIZKAoK$ ensures $\PiGenericSMS$
+reveals no information about the witness,
+including $\attr$, $F$, and the computation trace.
+Together, the two components are jointly indistinguishable across the two signers.
+
+\medskip
+\noindent\textbf{Setup indistinguishability.}
+$\SMSSimSetup$ is identical to $\SMSSetup$ except that it additionally generates
+an extraction trapdoor $\tauext$ (deferred to the full version).
+All other components, namely, $\SignatureScheme$, $\OTSScheme$, $\EncryptionScheme$,
+are executed identically in the real and simulated setups.
+Setup indistinguishability follows from the simulation indistinguishability
+of $\NIZKAoK$: any adversary distinguishing the two setups yields
+a distinguisher for $\NIZKAoK$'s simulation indistinguishability.
+
+\medskip
+\noindent\textbf{Extractability.}\hspace{-0.7pt}
+Given a valid forgery $\!(G, \tM, \SigmaGenericSMS\hspace{-0.7pt})$,
+$\SMSExtract$ runs $\NIZKAoK$'s extractor on $\PiGenericSMS$
+using trapdoor $\tauext$ to recover $(\attr', F', M', w', \op', \rop', \sigmaovk')$.
+The simulation-sound extractability~\cite{CRYPTO:ChaLys06}
+guarantees that the extracted witness satisfies $\RelationGenericSMS$,
+so $\op' \in \OpeningSetSignable$, $\op' = \op$, and $\tildeM = \tM$ hold.
+
+\medskip
+\noindent\textbf{Type-1 unforgeability (traceability).}
+Suppose $\Adversary$ forges a signature with extracted $(\attr', F') \notin \LCU$.
+By extractability, the extracted $\sigma'$ verifies, meaning
+$\SVerify(\vk, (\attr', F', \vkattr'), \sigma') = 1$.
+Since $(\attr', F')$ was never enrolled by $\FA$ (not in $\LCU$),
+no honest $\SMSJoin$ execution produced $\sigma'$,
+and $\Adversary$ did not receive $\mfk$ (as $\OMfk$ is restricted).
+This yields a forgery against $\SignatureScheme$ under verification key $\vk$.
+
+\medskip
+\noindent\textbf{Type-2 unforgeability (non-frameability).}
+Suppose $\Adversary$ forges a signature with extracted $(\attr', F') \in \LHU$.
+By extractability, $\SVerify(\vkattr', \ovk', \sigmaovk') = 1$,
+where $\vkattr'$ is the honest user's verification key recorded in $\State$.
+The one-time signature $\sigmaonetime$ on $(G, \tM, \ctop, \PiGenericSMS)$
+verifies under $\ovk'$, which was never signed by the honest user's $\skattr'$
+(since the forgery is fresh relative to $\LSig$).
+This yields a forgery against the existential unforgeability of $\SignatureScheme$
+under $\vkattr'$, the honest user's per-user verification key.
+
+The role of $\OTSScheme$ is distinct: strong unforgeability of $\OTSScheme$
+prevents an adversary from taking a legitimately obtained signature
+$(\ctop, \PiGenericSMS, \ovk, \sigmaonetime)$ and modifying any component
+to produce a new valid signature, since $\sigmaonetime$ binds all components
+under $\ovk$, which is itself certified under $\vkattr$.
+
+\medskip
+Details (\eg, $\SMSSimSetup$ and $\SMSExtract$)
+are deferred to \ifcameraready the full version.
+\else Appendix~\ref{appendix:SMS-analysis-generic-construction}.
+\fi
+\qed
+\end{proof}

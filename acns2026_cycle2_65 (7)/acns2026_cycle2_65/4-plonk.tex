@@ -1,0 +1,28 @@
+% !TEX root = main.tex
+\section{Proving Hidden Function Evaluations via PLONK}
+\label{section:proving-function-evaluations-via-plonk}
+%'s Arithmetization
+
+The key observation is that PLONKish arithmetization encodes any arithmetic circuit $\Circuit$
+via a description vector $\plonkdescription$ of length linear in the gate count of $\Circuit$,
+and crucially, this encoding has the same algebraic structure for any two circuits
+of the same gate count, independent of circuit topology.
+Treating $\plonkdescription$ as part of the \emph{witness} rather than the statement
+therefore reduces hidden-circuit satisfiability to verifying a single fixed public circuit
+of the same linear size, without universal circuits and without non-standard assumptions.
+
+Section~\ref{subsection:transforming-plonk-arithmetization-to-quadratic-constraints}
+introduces the PLONK constraint system and reduces it to a purely quadratic form
+compatible with standard NIZKAoK proof systems.
+Section~\ref{subsection:proving-sms-function-evaluations}
+applies this framework to the \SMS evaluation structure,
+merging the hidden-circuit proof for $F$ with the public-circuit proofs for $G$ and $P$
+into a single merged circuit $\CircuitMerge$.
+%
+Throughout this section, let $\Circuit$ be an arithmetic circuit over $\FF$
+with $\nin$ inputs, $\ngate$ gates, and $\nw \coloneqq \nin + 3\ngate$.
+
+In the CBDC example, $\CircuitMerge$ coalesces $F$'s limit checks, $G$'s merchant validation, and $P$'s risk scoring into a single verifiable statement.
+
+\input{4-sub-quadratic}
+\input{4-sub-sms}

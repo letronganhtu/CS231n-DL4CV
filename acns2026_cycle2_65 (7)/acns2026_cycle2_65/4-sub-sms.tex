@@ -1,0 +1,105 @@
+% !TEX root = main.tex
+\subsection{Proving \SMS Function Evaluations}
+\label{subsection:proving-sms-function-evaluations}
+
+This subsection applies the PLONK framework of
+Section~\ref{subsection:transforming-plonk-arithmetization-to-quadratic-constraints}
+to the \SMS evaluation structure,
+producing a single merged circuit $\CircuitMerge$
+whose satisfiability the NIZKAoK in $\SMSSign$ proves.
+
+\medskip
+\noindent\textbf{Proving the hidden evaluation of $F$.}
+Let $F$ be the signer's hidden policy
+with $\nin^{(F)}$ inputs, $\ngate^{(F)}$ gates,
+and $\nw^{(F)} \coloneqq \nin^{(F)} + 3\ngate^{(F)}$.
+The signer evaluates $F$ on $\bx = (M \| \attr \| w)$
+and retains the full computation trace.
+Let $\plonkdescription_F$ denote $F$'s PLONK description
+of the form~\eqref{equation:plonk-circuit-description}.
+The signer then samples $\alpha, \beta \uniformly \FF$ from a random oracle
+and assembles the witness vector:
+\begin{equation}\label{equation:sms-ww-F}
+\wit_F =
+\bigl(
+\plonkdescription_F \;\|\;
+\bx \;\|\; \ba \;\|\; \bb \;\|\; \bc \;\|\;
+(\hatw_i)_{i = 1}^{\ngate^{(F)}} \;\|\;
+(\tildew_i)_{i = 1}^{\nw^{(F)}} \;\|\;
+(w'_i)_{i = 1}^{\nw^{(F)}}
+\bigr),
+\end{equation}
+where $\bx = (M \| \attr \| w)$
+and all remaining components follow the definitions of
+Section~\ref{subsection:transforming-plonk-arithmetization-to-quadratic-constraints}.
+Viewing system~\eqref{equation:plonk-quadratic-constraints-with-challenges}
+instantiated with $\plonkdescription_F$ as a single verification circuit
+$\UniversalCircuitplonk_F$,
+the signer must prove that $\wit_F$ satisfies $\UniversalCircuitplonk_F$
+with public output $\out_F$.
+Since $\UniversalCircuitplonk_F$ has
+$\BigO(\nin^{(F)} + \ngate^{(F)})$ multiplications,
+this proof is as efficient as proving the satisfiability
+of a public circuit of the same size.
+
+For the NIZKAoK to be sound, $\alpha$ and $\beta$ must be derived from a random oracle
+after the prover commits to $\witpre$;
+allowing the prover to choose $\alpha, \beta$ in advance would permit a cheating prover
+to satisfy the grand product trivially.
+This commitment-then-challenge structure is precisely the two-phase split
+$(\witpre, \witsuf)$ of Section~\ref{subsection:transforming-plonk-arithmetization-to-quadratic-constraints},
+and it drives the modification to ZKBoo in Section~\ref{section:overview-lattice-sms}.
+
+\medskip
+\noindent\textbf{Treating $G$ and $P$ as public circuits.}
+Since $G$ and $P$ are public, PLONK's arithmetization is not needed for them.
+They are treated directly as arithmetic circuits $\Circuit_G$ and $\Circuit_P$,
+and their evaluations are proved as standard public-circuit satisfiability.
+
+\medskip
+\noindent\textbf{Merging into a single circuit.}
+Given $\alpha$, $\beta$, $\wit_F$, $M$, $\attr$, $w$,
+and intermediate outputs $\out_F$ and $\out_G$,
+we merge $\UniversalCircuitplonk_F$, $\Circuit_G$, and $\Circuit_P$
+into a single circuit $\CircuitMerge$ capturing:
+$\alpha$, $\beta$, $\wit_F$, and $\out_F$ satisfy $\UniversalCircuitplonk_F$;
+and $G(M, \attr, w) = \out_G$ and $P(\out_F, \out_G) = (\tM, \op)$.
+A single NIZKAoK applied to $\CircuitMerge$ then certifies
+the full evaluation $P(F(M, \attr, w), G(M, \attr, w))$
+with public inputs $\alpha$, $\beta$, $(\tM, \op)$
+and private witnesses $M$, $\attr$, $w$, $\wit_F$, $\out_F$, $\out_G$,
+without leaking $F$'s circuit structure or computation trace.
+
+After the Fiat--Shamir transform, $\alpha$ and $\beta$ are derived from
+the random oracle and are publicly recomputable by the verifier;
+the remaining witnesses $M$, $\attr$, $w$, $\wit_F$, $\out_F$, $\out_G$
+are known only to the signer and hidden by the NIZKAoK.
+
+\medskip
+\noindent\textbf{Sizes.}
+Let $\nadd^{(T)}$ and $\nmult^{(T)}$ denote the addition and multiplication gate counts
+of function $T \in \{F, G, P\}$.
+Circuit $\CircuitMerge$ has:
+\begin{align*}
+\text{additions:} \quad
+&\BigO\bigl(\nin^{(F)} + \nadd^{(F)} + \nmult^{(F)}\bigr)
++ \nadd^{(G)} + \nadd^{(P)};
+\\
+\text{multiplications:} \quad
+&\BigO\bigl(\nin^{(F)} + \nadd^{(F)} + \nmult^{(F)}\bigr)
++ \nmult^{(G)} + \nmult^{(P)}.
+\end{align*}
+For NIZKAoK systems whose proof size depends on the multiplication count,
+the dominant cost is
+$\BigO(\nin^{(F)} + \nadd^{(F)} + \nmult^{(F)}) + \nmult^{(G)} + \nmult^{(P)}$,
+where $\nin^{(F)} = |M| + |\attr| + |w|$,
+so the dominant multiplication count is
+$\BigO(|M| + |\attr| + |w| + \nadd^{(F)} + \nmult^{(F)}) + \nmult^{(G)} + \nmult^{(P)}$,
+which is quasilinear in the gate count of $F$ and linear in the multiplications of $G$ and $P$.
+This confirms the proof-size claim of
+Section~\ref{subsection:introduction-contributions}.
+The ZKBoo-based instantiation exploits the two-phase split
+$(\witpre, \witsuf)$ from
+Section~\ref{subsection:transforming-plonk-arithmetization-to-quadratic-constraints}
+to handle the random challenges $\alpha, \beta$;
+details are in Section~\ref{section:overview-lattice-sms}.

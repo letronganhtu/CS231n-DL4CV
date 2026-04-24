@@ -1,0 +1,118 @@
+% !TEX root = main.tex
+\begin{experiment}[Experiments for security of \SMS\label{figure:sms-security-experiments}]
+
+\underline{\textbf{Experiment $\ExpPrivb_{\Adversary}(\lambda)$:}}
+
+$(\pp, \State, \mfk, \tsk) \gets \SMSSetup(1^\lambda)$.
+
+$\amfk \coloneqq \False$,
+$\LCU \coloneqq \emptyset$,
+$\LHU \coloneqq \emptyset$,
+$\LSig \coloneqq \emptyset$.
+
+$(\aux, G, (\certattri, \secattri, M_i, w_i)_{i \in \{0, 1\}})
+\gets \Adversary^{\OCorruptU, \OHonestU, \OMfk, \OSign}(\pp)$.
+
+Obtain $(\attr_i, F_i)$ from $\certattri$ for $i \in \{0, 1\}$.
+
+If $G \notin \GFamily$ or $(\exists i \in \{0, 1\} \colon M_i \notin \MessageSpace \lor \attr_i \notin \AttrSpace
+\lor F_i \notin \FFamily
+\lor \secattri \not\leftrightharpoons_\pp \certattri)$,
+return $0$.
+
+$(\tM_i, \op_i) \coloneqq P(F_i(M_i, \attr_i, w_i), G(M_i, \attr_i, w_i))$
+for $i \in \{0, 1\}$.
+
+If $\tM_0 \neq \tM_1
+\lor \op_0 \notin \OpeningSetSignable
+\lor \op_1 \notin \OpeningSetSignable$,
+return $0$.
+
+Set $(\tM, \Sigma) \gets \SMSSign(\pp, \certattrb, \secattrb, G, M_b, w_b)$.
+
+$b' \gets \Adversary^{\OCorruptU, \OHonestU, \OMfk, \OSign}(\pp, \tM, \Sigma, \aux)$.
+
+Return $b'$.
+
+\vspace{1ex}
+\hrule height 0.4pt
+  
+\medskip
+\underline{\textbf{Experiment $\ExpReal_{\Adversary}(\lambda)$:}}
+
+$(\pp, \State, \mfk, \tsk) \gets \SMSSetup(1^\lambda)$.
+
+$\amfk \coloneqq \False$, $\atsk \coloneqq \False$,
+$\LCU \coloneqq \emptyset$, $\LHU \coloneqq \emptyset$, $\LSig \coloneqq \emptyset$.
+
+$b \gets \Adversary^{\OCorruptU, \OHonestU, \OMfk, \OTsk, \OSign, \OOpen}(\pp)$.
+
+Return $b$.
+
+\vspace{1ex}
+\hrule height 0.4pt
+
+\medskip
+\underline{\textbf{Experiment $\ExpSim_{\Adversary}(\lambda)$:}}
+
+$(\pp, \State, \mfk, \tsk, \tauext) \gets \SMSSimSetup(1^\lambda)$.
+\cmmt{Change $\SMSSetup(1^\lambda)$ in $\ExpReal_{\Adversary}(\lambda)$
+to $\SMSSimSetup(1^\lambda)$\!}
+
+$\amfk \coloneqq \False$, $\atsk \coloneqq \False$,
+$\LCU \coloneqq \emptyset$, $\LHU \coloneqq \emptyset$, $\LSig \coloneqq \emptyset$.
+
+$b \gets \Adversary^{\OCorruptU, \OHonestU, \OMfk, \OTsk, \OSign, \OOpen}(\pp)$.
+
+Return $b$.
+
+\vspace{1ex}
+\hrule height 0.4pt
+
+\medskip
+\underline{\textbf{Experiment $\ExpUnforge_{\Adversary}(\lambda)$:}}
+
+$(\pp, \State, \mfk, \tsk, \tauext) \gets \SMSSimSetup(1^\lambda)$.
+
+$\amfk \coloneqq \False$, $\atsk \coloneqq \False$,
+$\LCU \coloneqq \emptyset$, $\LHU \coloneqq \emptyset$, $\LSig \coloneqq \emptyset$.
+
+$(G, \tM, \Sigma) \gets
+\Adversary^{\OCorruptU, \OHonestU, \OMfk, \OTsk, \OSign, \OOpen}(\pp)$.
+
+If $G \notin \GFamily
+\lor \tM \notin \TMessageSpace
+\lor \SMSVerify(\pp, G, \tM, \Sigma) = 0$,
+return $0$.
+
+$(\attr', F', M', w') \gets \SMSExtract(\pp, \tauext, G, \tM, \Sigma)$.
+
+If $\attr' \notin \AttrSpace
+\lor F' \notin \FFamily
+\lor M' \notin \MessageSpace
+\lor w' \notin \WitnessSpace
+\lor (\attr', G, M', \Sigma) \in \LSig$,
+return $0$.
+
+$\op \gets \SMSOpen(\pp, \tsk, G, \tM, \Sigma)$.
+
+$(\tildeM, \op') \coloneqq P(F'(M', \attr', w'), G(M', \attr', w'))$.
+
+Return $1$ if \eqref{equation:condition-for-winning-unforgeability} holds;
+otherwise return $0$.
+\begin{equation}\label{equation:condition-for-winning-unforgeability}
+\begin{aligned}
+& (\op' \notin \OpeningSetSignable
+	\lor \op \neq \op'
+	\lor \tM \neq \tildeM)
+	&& \cmmt{extractability}
+	\\
+& \lor (\amfk = \False \land (\attr', F') \notin \LCU)
+	&& \cmmt{type-1 unforgeability}
+	\\
+& \lor (\amfk = \False \land (\attr', F') \in \LHU)
+	&& \cmmt{type-2 unforgeability}
+\end{aligned}
+\end{equation}
+
+\end{experiment}

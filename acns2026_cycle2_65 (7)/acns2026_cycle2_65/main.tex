@@ -1,0 +1,140 @@
+\documentclass[runningheads]{llncs}
+
+\newif\ifcameraready
+\camerareadytrue
+
+%\usepackage{showframe}
+\usepackage{amssymb}
+\usepackage{amsmath}
+%\usepackage{centernot}
+\usepackage{comment}
+%\usepackage{enumerate}
+\usepackage{enumitem} % for roman
+%\usepackage{fancybox}
+%\usepackage{frame}
+\usepackage{framed} % for a single experiment
+\usepackage{graphicx}
+\usepackage{hyperref}
+%\usepackage{makecell}
+\usepackage{marvosym} % for envelop symbol
+\usepackage{mathtools}
+\usepackage{multicol}
+\usepackage{multirow}
+%\usepackage{stmaryrd}
+\usepackage{orcidlink}
+%\usepackage{color}
+\usepackage{soul}
+\usepackage{underscore} % for doi
+%\usepackage[bb=stix]{mathalpha}
+%\usepackage[nottoc]{tocbibind}
+
+%\usepackage{xcolor}
+\usepackage{xspace}
+
+\title{Sovereign Modal Signatures}
+
+\author{
+	Yingfei Yan\inst{1}\orcidlink{0000-0002-9415-7935}%\thanks{Part of this work was done when the author was at Xidian University.}
+	\and Khai Hanh Tang\inst{2}\orcidlink{0009-0009-6790-4577}\textsuperscript{(\Letter)}
+	\and Hien Chu\inst{3,4}\orcidlink{0000-0002-2370-7864}\textsuperscript{(\Letter)}
+	\and Sherman~S.~M.~Chow\inst{5}\orcidlink{0000-0001-7306-453X}
+	\and San Ling\inst{2}\orcidlink{0000-0002-1978-3557}
+	\and Huaxiong Wang\inst{2}\orcidlink{0000-0002-7669-8922}
+	\and Kai Zhang\inst{6}\orcidlink{0009-0007-5445-8454}
+}
+\institute{
+	Université Clermont Auvergne, CNRS, LIMOS, France\\
+	%\email{yingfei.yan@uca.fr}\\
+	\and Nanyang Technological University, 50 Nanyang Ave, Singapore\\
+	%\email{\{khaihanh.tang,lingsan,hxwang\}@ntu.edu.sg}
+	\and TU Wien, Vienna, Austria\\
+	%\email{hien.chu@tuwien.ac.at}\\
+	\and Friedrich-Alexander-Universität Erlangen-Nürnberg, Erlangen, Germany\\
+	\and Dept. of Information Engineering, Chinese University of Hong Kong, 
+	%Shatin, N.T., 
+	Hong Kong\\
+	%\email{smchow@ie.cuhk.edu.hk}\\
+	\and School of Mathematics and Statistics, Shaanxi Normal University, Xi'an,
+	%710119
+	China\\
+	%\email{kzhang@snnu.edu.cn}\\
+	\email{khaihanh.tang@ntu.edu.sg},
+	\email{hien.chu@tuwien.ac.at}
+}
+
+\authorrunning{Y. Yan~\etal}
+\begin{document}
+\include{macros}
+
+\maketitle
+\begin{abstract}
+Signing anonymously under both hidden and public policies with per-signature accountability has only been studied piecemeal, as prior schemes address at most one dimension or restrict function classes.
+Here, we introduce sovereign modal signatures, the first scheme unifying both dimensions with support for hidden-circuit evaluation over bounded-size arithmetic circuits without universal circuits.
+Each signer holds a private attribute and a hidden policy $F$, certified by an authority and concealed from signatures.
+Resting on a public combiner $P$, the signing process maps the joint outputs of $F$ and an ad hoc function $G$ to a derived message and an opening tag governing per-signature traceability.
+
+Modifying the effective policy at signing time requires no key reissuance, since $G$ is chosen freshly against the fixed $F$.
+Achieving zero-knowledge evaluation of $F$ without exposing its structure is our core challenge, resolved by treating $F$'s PLONK description as witness rather than statement.
+No universal circuits are required: our reduction yields a fixed verification circuit of size linear in $F$'s gate count; the resulting scheme is provably secure in the random oracle model.
+
+Concretely, our generic construction needs only signatures, public-key encryption, and non-interactive zero-knowledge arguments of knowledge for arithmetic circuits.
+Hidden arithmetic circuits over any finite field are fully supported, subsuming the restricted Boolean and linear function classes of prior hidden-function schemes.
+Our post-quantum instantiation combines ZKBoo (Usenix Security '16) under the MPC-in-the-Head (MPCitH, STOC '07) paradigm with lattice-based primitives over $\ZZq$, achieving plausibly post-quantum security without pairings or the algebraic group model.
+With proof sizes quasilinear in $F$'s gate count and linear in $G$ and $P$'s multiplications, the scheme also readily admits richer MPCitH instantiations.
+
+\keywords{
+Accountable Anonymity
+\and
+Functional Signatures
+\and
+Lattices
+}
+\end{abstract}
+%zero-knowledge for Boolean circuits, 
+
+\input{1-intro}
+\input{2-def}
+\input{3-generic}
+\input{4-plonk}
+\input{5-lattice}
+
+\section{Conclusion}\label{section:conclusion}
+Sovereign modal signatures (\SMS) unify hidden and public policy enforcement
+with per-signature modal accountability,
+addressing a decade-old open problem in privacy-preserving signatures
+by treating a circuit's PLONK description as a witness rather than a statement,
+achieving the first efficient hidden arithmetic-circuit evaluation
+without universal circuits or idealized algebraic models.
+
+Multi-stakeholder deployments, \eg, audit systems, regulatory compliance,
+and credential delegation, are the natural home for \SMS:
+each participant operates under a certifying authority's hidden policy,
+overlays a publicly verifiable check at signing time,
+and exposes exactly as much identity as the configuration prescribes,
+realizing the functional credentials vision of prior work~\cite{iotpts/Chow16}.
+
+Concrete directions for future work include threshold and distributed issuance,
+revocation within the partial-dynamic model,
+and measured efficiency at the $128$-bit post-quantum security level;
+more broadly, the PLONK-based hidden-circuit reduction developed here
+is a general tool applicable to any privacy primitive
+using hidden arithmetic-circuit proofs in the random oracle model.
+
+\section*{Acknowledgments}\addcontentsline{toc}{section}{Acknowledgments}
+The first four authors utilized AI tools for linguistic and stylistic refinement.
+
+Research at Nanyang Technological University is supported by Singapore Ministry of Education Academic Research Fund Tier 2 Grant MOE-T2EP20223-0016, the National Research Foundation, Singapore and Infocomm Media Development Authority under its Trust Tech Funding Initiative.
+Any opinions, findings and conclusions or recommendations expressed in this material are those of the author(s) and do not reflect the views of National Research Foundation, Singapore and Infocomm Media Development Authority.
+
+Yingfei Yan is supported by the European Astral Project ERASMUS-EDU\allowbreak2024:101184483.
+She thanks Xidian University for its support and Nanyang Technological University (NTU) and The Chinese University of Hong Kong (CUHK) for their hospitality during her visits.
+
+Sherman Chow is supported in part by the Research Grants Council of Hong Kong under the Collaborative Research Fund (C5097-25GF) and the General Research Fund (14210825).
+
+Kai Zhang is supported in part by the Natural Science Foundation of Shaanxi Province (No.\ 2025JC-YBMS-748).
+
+	\bibliographystyle{splncs04}
+	\bibliography{sref}
+	\addcontentsline{toc}{section}{References}
+
+\end{document}

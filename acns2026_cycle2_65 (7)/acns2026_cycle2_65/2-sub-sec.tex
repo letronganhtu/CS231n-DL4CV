@@ -1,0 +1,250 @@
+% !TEX root = main.tex
+\subsection{Correctness and Security}\label{subsection:sms-correctness-and-security}
+
+The system maintains a public state $\State$ recording each enrolled user's
+attribute, assigned function, and enrollment transcript.
+$\State$ is \emph{consistent} if every recorded transcript verifies
+under $\SMSJoin$.
+A secure \SMS scheme satisfies correctness, privacy, and unforgeability.
+
+\medskip
+\noindent\textbf{Correctness.}
+Correctness requires that honest signatures verify and open correctly,
+that the system state remains consistent throughout,
+and that only enrolled users can produce valid signatures.
+
+\begin{definition}[Correctness]\label{definition:sms-correctness}
+For $\SMSSetup(1^\lambda)$ returning $(\pp, \State, \mfk, \tsk)$,
+an \SMS scheme $\SMSScheme$ is \emph{correct} if the following conditions hold.
+\begin{enumerate}
+\item $\OpeningSetSignable \subsetneq \OpeningSet$
+and all attributes in $\State$ are pairwise distinct.
+
+\item If
+$\SMSJoin\interaction{\User(1^\lambda)}{\FA(\mfk)}(\pp, \State, \attr, F)$
+is executed honestly, with transcript $\transcript$:
+$\certattr \!\leftrightharpoons_\pp\! \secattr$,
+$\transcript$ is valid,
+with $(\attr, F, \transcript)$ inserted into~$\State$.
+
+\item For $(\attr, F, \cdot) \in \State$ with
+$\certattr \leftrightharpoons_\pp \secattr$,
+$G \in \GFamily$, $M \in \MessageSpace$, $w \in \WitnessSpace$:
+\begin{equation}\label{equation:sms-correctness-probability}
+\condprob{
+\phantom{\land}\; b = 1
+\\
+\land\; \op \in \OpeningSetSignable
+\\
+\land\; \op = \op' 
+\\
+\land\; \tM = M'
+}{
+(\tM, \Sigma) \gets \SMSSign(\pp, \certattr, \secattr, G, M, w),
+\\
+(M', \op) = P(F(M, \attr, w), G(M, \attr, w)),
+\\
+b \coloneqq \SMSVerify(\pp, G, \tM, \Sigma),
+\\
+\op' \gets \SMSOpen(\pp, \tsk, G, \tM, \Sigma)
+} = 1.
+\end{equation}
+\end{enumerate}
+\end{definition}
+
+\medskip
+\noindent\textbf{Adversary model.}
+The adversary $\Adversary$ interacts with the system via oracles
+that model realistic attack capabilities,
+defined below,
+and the security properties are parameterized by which oracles $\Adversary$ may access.
+We write $\!(\cdot)^{\condition}$ to denote that an oracle returns $\epsilon$
+when $\condition$~holds.
+
+\medskip
+\noindent\underline{Oracles $\OMfk$, $\OTsk$.}
+$\OMfk$ returns $\mfk$ to $\Adversary$ and sets flag $\amfk$ to $\True$.
+$\OTsk$ returns $\tsk$ and sets flag $\atsk$ to $\True$.
+Both flags are initialized to $\False$.
+
+\medskip
+\noindent\underline{Oracle $\OCorruptU$, set $\LCU$.}
+On query $(\attr, F)$ with $(\attr, \cdot) \notin \LCU$,
+$\OCorruptU$ acts as an honest $\FA$, runs $\SMSJoin$,
+sets $\LCU \coloneqq \LCU \cup \{(\attr, F)\}$,
+updates $\State$, and returns $(\secattr, \certattr)$ to $\Adversary$.
+
+\medskip
+\noindent\underline{Oracle $\OHonestU$, set $\LHU$.}
+On query $\attr$ with $(\attr, \cdot) \notin \LCU$,
+$\OHonestU$ acts as an honest $\FA$, samples $F \in \FFamily$, runs $\SMSJoin$,
+and sets $\LHU \coloneqq \LHU \cup \{(\attr, F)\}$ and updates $\State$.
+The secrets of users in $\LHU$ are not given to $\Adversary$.
+Both $\OCorruptU$ and $\OHonestU$ guarantee that
+all attributes in $\State$ are distinct
+and $\LCU \cap \LHU = \emptyset$ on the attribute component.
+
+\medskip
+\noindent\underline{Oracle $\OSign$, set $\LSig$.}
+On query $(\attr, G, M, w)$,
+if $\exists F$ such that $(\attr, F) \in \LHU$,
+$G \in \GFamily$, $M \in \MessageSpace$, $w \in \WitnessSpace$,
+and $\op \in \OpeningSetSignable$ where $\op$ is determined by $P$, $F$, $G$, $M$, $\attr$, $w$,
+then $\OSign$ returns
+$(\tM, \Sigma) \gets \SMSSign(\pp, \certattr, \secattr, G, M, w)$
+and inserts $(\attr, G, M, \Sigma)$ into $\LSig$.
+
+\medskip
+\noindent\underline{Oracle $\OOpen$.}
+On query $(G, \tM, \Sigma)$,
+return $\op \gets \SMSOpen(\pp, \tsk, G, \tM, \Sigma)$.
+
+\medskip
+\noindent\textbf{Privacy.}
+Privacy guarantees that \SMS signatures reveal no information about
+the signer's attribute $\attr$ or hidden policy $F$.
+$\Adversary$ chooses $G$ and two candidate signers,
+each with a valid certificate, secret, message, and witness,
+and attempts to identify which signer produced the challenge signature.
+Both candidate signers must use the same $G$,
+since $G$ is public and a verifier could trivially distinguish
+signatures produced under different public functions.
+
+$\Adversary$ may access $\OCorruptU$, $\OHonestU$, $\OMfk$, and $\OSign$,
+but not $\OTsk$ or $\OOpen$:
+access to $\tsk$ trivially breaks privacy,
+and allowing $\OOpen$ access requires public-key encryption to be secure against chosen-ciphertext attacks,
+a conceptually straightforward extension (\eg,~\cite{CRYPTO:NGSY22}).
+To prevent trivial wins, both candidate signers must yield
+the same derived message $\tM$ and a signable opening value.
+
+\begin{definition}[Privacy]\label{definition:sms-privacy}
+Let $\ExpPrivb_{\Adversary}(\lambda)$ be defined as in
+Figure~\ref{figure:sms-security-experiments}.
+$\SMSScheme$ is \emph{private} if, for any probabilistic polynomial-time (PPT) $\Adversary$,
+\[
+\left|\Pr\bigl[\ExpPrivZero_{\Adversary}(\lambda) = 1\bigr]
+- \Pr\bigl[\ExpPrivOne_{\Adversary}(\lambda) = 1\bigr]\right|
+\leq \negl(\lambda).
+\]
+\end{definition}
+
+\input{2-exp}
+
+\medskip
+\noindent\textbf{Unforgeability.}
+Unforgeability prevents any PPT $\Adversary$ from producing a valid \SMS signature
+without a legitimate certificate--secret pair.
+It encompasses three nested properties,
+formalized jointly in $\ExpUnforge_\Adversary(\lambda)$
+(Figure~\ref{figure:sms-security-experiments}).
+
+\begin{itemize}
+\item \emph{Extractability.}
+Every valid forgery $(G, \tM, \Sigma)$ must extract to a list of witnesses
+$(\attr', F', M', w')$ such that
+$\op' \in \OpeningSetSignable$,
+$\op' = \op$ as opened by $\SMSOpen$,
+and $\tildeM = \tM$.
+No adversary can produce a signature whose extracted witness is inconsistent
+with its opening value or its derived message.
+
+\item \emph{Type-1 unforgeability (traceability).}
+Extractability holds, and $\Adversary$ cannot forge a signature
+whose extracted $(\attr', F')$ lies outside the corrupted set $\LCU$.
+
+\item \emph{Type-2 unforgeability (non-frameability).}
+Extractability holds, and no coalition of users, $\FA$, and $\TA$
+can forge a signature whose extracted $(\attr', F')$ belongs to $\LHU$.
+\end{itemize}
+
+The two unforgeability types are independent, as the table below shows.
+
+\begin{center}\footnotesize
+\begin{tabular}{@{} l | l | l @{}}
+\hline
+& \textbf{Type-1 (Traceability)} & \textbf{Type-2 (Non-frameability)}
+\\
+\hline
+Forgery target
+	& $(\attr', F') \notin \LCU$
+	& $(\attr', F') \in \LHU$
+	\\
+Covers
+	& $\LHU \cup (\AttrSpace \setminus (\LCU \cup \LHU))$
+	& $\LCU \cup (\AttrSpace \setminus (\LCU \cup \LHU))$
+	\\
+$\OMfk$ access
+	& Restricted & Restricted
+	\\
+\hline
+\end{tabular}
+\end{center}
+
+Neither type implies the other:
+Type-2 covers $\LCU$ but not $\LHU$;
+Type-1 covers $\LHU$ but not $\LCU$.
+A forgery is non-trivial only if $(G, \tM, \Sigma)$ was not previously
+obtained via $\OSign$, enforced by the $\LSig$ membership check in $\ExpUnforge$.
+
+Extractability permits $\OMfk$ access in $\ExpUnforge$ because it only requires consistency of extracted components with the system prescription, independent of membership.
+Conversely, for Type-1 and \mbox{Type-2} unforgeability, $\OMfk$ access is restricted,
+because possessing $\mfk$ would allow $\Adversary$ to certify attributes outside both $\LCU$ and $\LHU$, trivially breaking the membership-based winning conditions;
+in particular, $\Adversary$ could certify the same attribute as an honest user
+under a different hidden function
+(\eg, $(\attr, F) \in \LHU$ but $(\attr, F') \notin \LHU$ where $F' \neq F$),
+producing a valid signature outside the honest-user record.
+
+\medskip
+\noindent\textbf{Simulated setup for extraction.}
+%Following~\cite{PKC:BelFuc14,EC:LNPY21,CRYPTO:NGSY22,AC:NRSX23,ACNS:HLTW25},
+We devise algorithms $\SMSSimSetup$ and $\SMSExtract$
+to enable simulation-sound extractability~\cite{CRYPTO:ChaLys06}:
+a simulated setup indistinguishable from the real one,
+%paired
+with a trapdoor for extracting the underlying~witness.
+%any valid signature.
+
+\begin{definition}[Simulated setup and extraction]%
+\label{definition:sms-additional-algorithms}
+\begin{description}
+\item[$\SMSSimSetup(1^\lambda)$:]
+Identical to $\SMSSetup$ but additionally outputs extraction trapdoor $\tauext$.
+Output: $(\pp, \State, \mfk, \tsk, \tauext)$.
+
+\item[$\SMSExtract(\pp, \tauext, G, \tM, \Sigma)$:]
+Given $\pp$, trapdoor $\tauext$, $G \in \GFamily$,
+$\tM \in \TMessageSpace$, and signature $\Sigma$,
+return $(\attr, F, M, w) \in
+\AttrSpace \times \FFamily \times \MessageSpace \times \WitnessSpace$.
+\end{description}
+\end{definition}
+
+The correctness of \SMS under $\SMSSimSetup$ is defined identically
+to Definition~\ref{definition:sms-correctness} with $\SMSSetup$
+replaced by $\SMSSimSetup$;
+additionally, the extracted components must match those used to create the signature.
+Setup indistinguishability implies this correctness against PPT adversaries,
+while correctness of the simulated setup holds unconditionally.
+
+\begin{definition}[Setup indistinguishability]%
+\label{definition:sms-setup-indistinguishability}
+$\SMSScheme$ satisfies \emph{setup indistinguishability} if,
+for any PPT $\Adversary$,
+\[
+\left|\Pr\bigl[\ExpReal_{\Adversary}(\lambda) = 1\bigr]
+- \Pr\bigl[\ExpSim_{\Adversary}(\lambda) = 1\bigr]\right|
+\leq \negl(\lambda),
+\]
+where $\ExpReal_{\Adversary}(\lambda)$ and $\ExpSim_{\Adversary}(\lambda)$
+are defined in Figure~\ref{figure:sms-security-experiments}.
+\end{definition}
+
+\begin{definition}[Unforgeability]\label{definition:sms-unforgeability}
+$\SMSScheme$ is \emph{unforgeable} if, for any PPT $\Adversary$,
+\[
+\Pr\bigl[\ExpUnforge_{\Adversary}(\lambda) = 1\bigr] \leq \negl(\lambda),
+\]
+where $\ExpUnforge_{\Adversary}(\lambda)$ is defined in
+Figure~\ref{figure:sms-security-experiments}.
+\end{definition}

@@ -1,0 +1,126 @@
+% !TEX root = main.tex
+\subsection{Related Work}\label{subsection:introduction-related-work}
+
+\medskip
+\noindent\textbf{Signability in prior notions.}
+Table~\ref{table:comparisons-with-other-privacy-preserving-signatures} summarizes the landscape.
+Here, we discuss the work most closely related to \SMS in design goals.
+We classify \MPS~\cite{CRYPTO:NGSY22} as limited function composition:
+the signer evaluates a public function to obtain an index $j$,
+then selects the $j$-th member of a public family $\{P_i\}_{i = 1}^k$
+as the effective hidden policy.
+The hidden function is never directly composed with a public one;
+the family size is bounded ($k = 4$ in~\cite{CRYPTO:NGSY22});
+and the selection circuit evades, rather than solves,
+the challenge of proving hidden-circuit satisfiability.
+\SMS replaces selection with genuine composition via the combiner $P$,
+supports an unbounded family $\FFamily$ of hidden arithmetic circuits,
+and directly confronts hidden-circuit evaluation.
+Furthermore, \MPS's selection-based approach costs
+$\BigO(k \cdot (\nmult + \nadd))$ constraints;
+the PLONK-based reduction developed here reduces this to $\BigO(\nmult + \nadd)$,
+removing the multiplicative factor $k$.
+The original PBS construction~\cite{PKC:BelFuc14},
+built on Groth--Sahai proofs~\cite{EC:GroSah08}
+over structure-preserving signatures~\cite{CRYPTO:AFGHO10},
+is inherently restricted to functions expressible as bilinear maps.
+Subsequent lattice-based constructions~\cite{ChengNW16,XuSNW22}
+extend the reach only to linear systems over $\ZZ_2$.
+Bobolz~\etal~\cite{FC:BobDiaKoh24} introduced universal anonymous signatures
+to balance utility and privacy,
+but omit hidden signing functions
+and provide only a high-level framework without concrete instantiations.
+Nguyen~\etal~\cite{AC:NRSX23} defined bicameral and auditably private signatures,
+pairing a private signing policy with a public disclosure mechanism
+in a fixed two-state model;
+that binary structure is a special case of \SMS,
+which supports arbitrary composition of hidden and public functions
+and a continuously variable accountability spectrum.
+
+\medskip
+\noindent\textbf{Accountability mechanisms in prior notions.}
+The accountability axis has a richer history than the binary GS model suggests.
+Linkable ring signatures, proposed by Liu, Wei, and Wong~\cite{ACISP:LiuWeiWong04}, allow linking two signatures
+by the same signer without revealing identity.
+Accountable ring signatures, introduced by Xu and Yung~\cite{CARDIS:XuYun04}
+and first realized in the standard model by
+Lai, Zhang, Chow, and Schr\"{o}der~\cite{ESORICS:LaZhChowSch16},
+allow the signer to designate an opener who can later reveal the signer's identity,
+thereby combining the ad hoc group flexibility of ring signatures
+with the accountability of group signatures.
+Chow, Susilo, and Yuen~\cite{VIETCRYPT:ChowSusYue06} proposed
+escrowed linkability, where only a designated linking authority
+can decide whether two ring signatures share a signer.
+Traceable ring signatures, proposed by Fujisaki and Suzuki~\cite{PKC:FujSuz07}, 
+publicly reveal any signer who signs two distinct messages under the same tag, without any designated opener.
+
+Kiayias, Tsiounis, and Yung~\cite{EC:KiayiasYung04} introduced traceable signatures,
+where a tracing trapdoor tags a misbehaving user's signatures without opening others;
+Chow~\cite{SAC:Chow09} improved this by enabling per-user tagging
+without first collecting all signatures.
+Abe, Chow, Haralambiev, and Ohkubo~\cite{IJIS:AbeChowHarOhk13}
+introduced double-trapdoor anonymous tags for a modular construction of traceable signatures
+supporting authorship claiming and denial:
+the signer herself can selectively prove or disprove her authorship of a specific signature,
+a form of user-controlled accountability orthogonal to authority-initiated tracing.
+Kiayias and Zhou~\cite{FC:KiayiasZhou07} proposed hidden identity-based signatures,
+where the opening authority needs only its secret key to reveal the signer's identity;
+Chow, Zhang, and Zhang~\cite{FC:ChowZhaZha17} gave the first standard-model construction.
+Zhang, Wu, and Chow~\cite{RSA:ZhaWuChow19} introduced certified limited opening,
+delegating opening rights so that neither the master certifier
+nor unauthorized parties can revoke anonymity.
+Each of these offers a distinct tracing granularity;
+\SMS's opening tag $\op$ can encode any of these levels
+as a special configuration of the combiner $P$;
+user-controlled accountability such as authorship claiming and denial
+points to a natural extension of the framework.
+
+\medskip
+\noindent\textbf{Proofs for hidden function evaluations.}
+Several recent works construct zero-knowledge proofs
+for the satisfiability of hidden circuits,
+but each either targets a different security model or a different problem class.
+Ling~\etal~\cite{PQCRYPTO:LNPTW21} gave zero-knowledge proofs
+for committed symmetric Boolean functions,
+covering only a narrow subclass.
+Boneh, Nguyen, and Ozdemir~\cite{EPRINT:BonNguOzd21} commit to
+a hidden circuit's PLONK's description via Marlin~\cite{EC:CHMMVW20},
+yielding proofs of arithmetic-circuit satisfiability,
+but their construction relies on the algebraic group model (AGM)~\cite{CRYPTO:FucKilLos18},
+which carries documented soundness concerns~\cite{AC:ZhaZhoKat22}.
+Di~\etal~\cite{AC:DXNT24} propose MUXProofs,
+layering Marlin over a univariate sum-check to verify RAM steps encoded as rank-1 constraint systems;
+Choudhuri~\etal~\cite{PETS:CGGSS24} introduced Sublonk,
+applying PLONK's arithmetization to arbitrary-degree polynomials
+for instruction-level proofs.
+Both also rely on the AGM.
+
+Our construction operates in the random oracle model (ROM) for both
+the generic and the lattice-based instantiation, avoiding these concerns entirely.
+Tang, Pham, and Ngo~\cite{EPRINT:TanPhaNgo24} apply PLONK's arithmetization
+to prove correct execution of RAM programs,
+a problem structurally different from that of hidden-circuit evaluation for signatures;
+the treatment developed here, specifically treating the PLONK's description
+as a witness component to reduce hidden-circuit satisfiability
+to a fixed public verification circuit,
+is tailored to the NIZKAoK requirements of privacy-preserving signatures
+and is not addressed in that prior work.
+In short, no prior scheme achieves ROM-based proofs
+for arbitrary hidden bounded-size arithmetic circuits
+in a privacy-preserving signature setting.
+
+\medskip
+\noindent\textbf{Relationship to anonymous credentials.}
+Anonymous credentials~\cite{SJ:AuSMC13,EC:CamLys01,CRYPTO:CamLys04} and \SMS share structural ancestry:
+both involve a certifying authority, a hidden user attribute,
+and a zero-knowledge proof of possession.
+The two paradigms are nonetheless orthogonal.
+The former focuses on selective disclosure of attribute \emph{values}
+in a presentation token, where the predicate being proven is public to the verifier.
+\SMS focuses on signing messages under a hidden function \emph{structure}~$F$,
+whose circuit topology is concealed from signatures,
+and adds per-signature accountability control absent from anonymous credentials,
+which typically target full unlinkability.
+Combining the two, producing an \SMS signature while selectively disclosing
+which attributes the signer holds, is a natural direction for future work
+and is part of the broader functional credentials framework~\cite{iotpts/Chow16}.

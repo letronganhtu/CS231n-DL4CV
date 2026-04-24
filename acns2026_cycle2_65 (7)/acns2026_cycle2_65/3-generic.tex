@@ -1,0 +1,39 @@
+% !TEX root = main.tex
+\section{Generic Construction of \SMS}\label{section:generic-sms}
+
+With the \SMS notion established, we build a generic scheme from standard primitives,
+treating the hidden-circuit NIZKAoK as an abstract component
+instantiated in Section~\ref{section:proving-function-evaluations-via-plonk}.
+Following Nguyen~\etal~\cite{CRYPTO:NGSY22},
+each enrolled user holds an $\FA$-issued certificate
+$\certattr = (\attr, F, \vkattr, \sigma)$
+binding their attribute, hidden policy, and a per-user verification key,
+where $\sigma \gets \SSign(\mfk, (\attr, F, \vkattr))$
+and the global verification key $\vk$ is embedded in $\gpk$.
+
+At signing, the user encrypts the opening tag $\op$ under $\TA$'s public key $\ek$,
+producing a ciphertext $\ctop$ that $\TA$ can later decrypt to recover $\op$.
+A NIZKAoK proof $\PiGenericSMS$ certifies correct evaluation of $P(F(\cdot), G(\cdot))$,
+validity of the membership certificate,
+and correct encryption of $\op$,
+without revealing $\attr$, $F$, or any intermediate computation trace.
+How the NIZKAoK handles the hidden evaluation of $F$
+via PLONK's arithmetization is developed in Section~\ref{section:proving-function-evaluations-via-plonk};
+here, we treat the NIZKAoK as an abstract component for arithmetic circuit satisfiability.
+%
+In the \SMS instance for the CBDC example,
+$F$ checks the spending limit, $G$ validates the merchant,
+and $P$ sets $\op$ to the pseudonym or identity tag.
+
+Without further binding, an adversary could modify $(\ctop, \PiGenericSMS)$
+to produce a new valid \SMS signature.
+%Following~\cite{PKC:BelFuc14,CRYPTO:NGSY22,ACISP:TNLPS24},
+The user generates a one-time key pair $(\ovk, \osk)$ at the time of signing,
+certifies $\ovk$ under $\skattr$,
+and computes a one-time signature $\sigmaonetime$ over all signature components.
+The NIZKAoK then proves validity of $\sigmaonetime$ under $\vkattr$
+rather than proving the secret key $\skattr$ directly,
+binding all components together against post hoc modification.
+
+\input{3-sub-desc}
+\input{3-sub-analysis}

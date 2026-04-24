@@ -1,0 +1,172 @@
+% !TEX root = main.tex
+\subsection{Our Contributions}\label{subsection:introduction-contributions}
+We answer RQ\,1, RQ\,2, and RQ\,3 affirmatively.
+%The contributions follow their logical dependency:
+We first establish that hidden arithmetic-circuit evaluation is achievable (RQ\,1),
+then define the notion that exploits this capability (RQ\,2),
+and finally construct and instantiate it (RQ\,3).
+
+\medskip
+\noindent\textbf{Efficient hidden arithmetic-circuit evaluation (RQ\,1).}
+The main technical challenge is proving in zero knowledge the evaluation of the function
+$P(F(M, \attr, w), G(M, \attr, w))$, concealing both the function $F$ and its computation trace.
+Evaluating a hidden circuit requires concealing
+not only the inputs but also the circuit structure and all intermediate computation traces,
+making standard non-interactive zero-knowledge arguments of knowledge (NIZKAoK) techniques for public circuits not directly applicable.
+We resolve this by adapting PLONK's arithmetization~\cite{EPRINT:GabWilCio19}:
+PLONK encodes each arithmetic gate as a quadratic constraint via selector values
+and enforces wire consistency across gates via a permutation.
+Crucially, this encoding, which we call the \emph{PLONK description} $\plonkdescription$ of $\Circuit$
+and which we refer to via PLONK's arithmetization throughout,
+is a vector of length linear in the total gate count of $\Circuit$.
+Treating this description as part of the \emph{witness} rather than the statement
+reduces hidden-circuit satisfiability to verifying a fixed public circuit $\UniversalCircuitplonk$
+of the same linear size.
+
+Concretely, to prove $F$'s evaluation without revealing its structure,
+we fix $F$'s PLONK description as part of the witness,
+derive random challenges $\alpha, \beta$ from the random oracle,
+and view the resulting constraint system as a fixed public verification circuit
+$\UniversalCircuitplonk_F$ whose size is linear in the gate count of $F$.
+A NIZKAoK on $\UniversalCircuitplonk_F$ then certifies $F$'s evaluation in zero knowledge,
+as efficiently as if $F$'s circuit structure were public.
+This is the first result of this kind for bounded-size arithmetic circuits over $\FF_q$
+without universal circuits~\cite{STOC:Valiant76}
+and without the algebraic group model~\cite{CRYPTO:FucKilLos18},
+and consequently yields the first efficient privacy-preserving signature scheme
+supporting hidden arithmetic-circuit evaluation without universal circuits.
+See Section~\ref{section:proving-function-evaluations-via-plonk} for a detailed discussion.
+
+Prior attempts either require non-standard assumptions~\cite{EPRINT:BonNguOzd21,PETS:CGGSS24}
+or restrict to narrow circuit classes~\cite{PQCRYPTO:LNPTW21,ACISP:TNLPS24};
+our technical contribution here is this application of a PLONKish-based reduction,
+not general uses of zero-knowledge~proofs.
+
+\medskip
+\noindent\textbf{A new notion (RQ\,2).}
+We propose \emph{Sovereign Modal Signatures} (\SMS), a notion in which both axes are governed by a single unified mechanism.
+``\emph{Sovereign}'' names the per-signature autonomy of the signer,
+who governs the effective policy and accountability mode at each signing,
+unconstrained by a predefined menu of options.
+``\emph{Modal}'' names the mode-structured accountability output,
+generalizing the finite multimodal disclosure of MPS~\cite{CRYPTO:NGSY22}
+to an open-ended spectrum governed by the signer's choice of $G$
+and the certified structure of $F$.
+``Sovereign modal'' thus names a compound property:
+the signer exercises \emph{sovereign} per-signature control
+over a \emph{mode}-structured policy and accountability~system.
+
+In \SMS, each signer holds a private attribute $\attr$
+and a hidden policy $F$ certified by a function-issuing authority $\FA$.
+For each message $M$, the signer additionally chooses an \emph{ad hoc} function
+$G \in \GFamily$, freely selected at each signing without reissuing the certificate.
+$G$ is \emph{public}: any verifier can confirm that $G$ approved the message,
+providing the publicly auditable policy component absent from \textsf{FS} and \textsf{PBS}.
+Hiding $G$ would forfeit this auditability and double the proof cost;
+the flexibility of \SMS lies in the per-signature choice of $G$, not its concealment.
+In practice, $G$'s inputs or outputs may themselves carry private information,
+\eg, as ciphertexts or commitments, even when $G$'s structure is public.
+$G$ does not override $F$'s accountability encoding;
+a public combiner $P$ composes their outputs so that both the signing policy
+and the accountability mode are jointly determined:
+\begin{equation}\label{equation:determining-tM-op-from-G-F-P}
+(\tM, \op) = P\bigl(F(M, \attr, w),\, G(M, \attr, w)\bigr).
+\end{equation}
+The output $\tM$ determines what is signed,
+and $\op$ determines what the authority recovers.
+A special value $\op \notin \OpeningSetSignable$ blocks signing entirely;
+any $\op \in \OpeningSetSignable$ permits a signature and encodes the accountability mode,
+ranging from unconditional anonymity through partial disclosure to full identity recovery.
+The signer produces a signature on $\tM$
+in the manner of a functional signature~\cite{PKC:BoyGolIva14},
+binding the output to the certified hidden policy,
+with $\op$ then encrypted for the tracing authority $\TA$~\cite{CRYPTO:NGSY22}.
+Tracing is triggered by $\TA$ running $\SMSOpen$ on any valid signature,
+recovering exactly the information encoded in $\op$.
+Throughout, $\attr$ and $F$ remain hidden from all signatures.
+
+Crucially, even with $F$ hidden, any verifier can confirm that
+the signature was produced under a policy certified by $\FA$
+and a publicly known $G$, with $P$ yielding a signable output,
+a form of policy compliance auditability absent from FS and PBS.
+The effective policy can be updated at each signing via $G$
+without reissuing the key or the certified hidden $F$.
+Existing primitives arise as special cases:
+PBS and {FS} correspond to $P$ acting as the identity on $F$'s output;
+{ABS} and {BiAS} correspond to $P$ acting as the identity on $G$'s output;
+{MPS} corresponds to $G$ selecting an index into a public function family fed to $P$.
+\SMS thus subsumes {RS}, {GS}, {ABS}, {BiAS},
+{MPS}, {FS}, and {PBS} as special cases,
+and realizes the single-signer, function-bound slice of the functional credentials framework envisioned~\cite{iotpts/Chow16}.
+%in prior work~\cite{iotpts/Chow16}.
+
+\input{1-tab}
+
+Table~\ref{table:comparisons-with-other-privacy-preserving-signatures} situates \SMS
+among prior privacy-preserving signatures;
+\SMS is the unique one with public arithmetic functions,
+hidden arithmetic functions, 
+sovereign per-signature policy control,
+and modal accountability simultaneously.
+
+\medskip
+\noindent\textbf{Generic construction and post-quantum instantiation (RQ\,3).}
+Based on the paradigm of Nguyen~\etal~\cite{CRYPTO:NGSY22},
+we build \SMS generically from four standard primitives:
+a secure signature scheme $\SignatureScheme$,
+a chosen-plaintext-secure (CPA-secure) public-key encryption scheme $\EncryptionScheme$,
+a strongly unforgeable one-time signature scheme $\OTSScheme$,
+and a NIZKAoK for arithmetic circuits
+satisfying simulation-sound extractability~\cite{CRYPTO:ChaLys06},
+where a valid proof always yields an extractable witness
+even in the presence of simulated proofs.
+The hidden-circuit evaluation of NIZKAoK
+is handled by the PLONK-based reduction established in RQ\,1:
+fixing $F$'s PLONK description as part of the witness
+reduces the proof obligation to a fixed public verification circuit,
+enabling the NIZKAoK to verify $F$'s evaluation as efficiently as that of a public circuit of the same size.
+The NIZKAoK proves in zero knowledge that
+the signer holds a valid $\FA$-issued certificate over $(\attr, F)$,
+that $P(F(\cdot, \cdot, \cdot), G(\cdot, \cdot, \cdot))$ evaluates correctly
+to a signable opening tag,
+and that the tag is honestly encrypted for $\TA$ and bound to
+a one-time verification key certified under the signer's attribute key.
+This avoids universal circuits~\cite{STOC:Valiant76},
+pairing-based assumptions, and idealized algebraic models.
+
+Regarding our post-quantum instantiation, we employ ZKBoo \cite{USENIX:GiaMadOrl16}
+under the MPC-in-the-Head (MPCitH) paradigm~\cite{STOC:IKOS07}.
+ZKBoo's direct handling of arithmetic-circuit satisfiability makes it a natural fit
+for the NIZKAoK slot in the generic \SMS construction,
+and this instantiation replaces the abstract NIZKAoK with ZKBoo
+without redesigning the signing protocol.
+The lattice-based primitives over $\ZZq$ include
+Lindner--Peikert (LP) public-key encryption (PKE)~\cite{RSA:LinPei11} ($\EncryptionSchemeLP$),
+Jeudy--Roux-Langlois--Sanders (JRS) signatures~\cite{CRYPTO:JeuRouSan23} ($\SignatureSchemeStandardJRS$),
+and Kawachi--Tanaka--Xagawa (KTX) commitments~\cite{AC:KawTanXag08}.
+Since ZKBoo satisfies simulation-sound extractability with quasi-unique response~\cite{INDOCRYPT:FKMV12},
+\ie, any commitment and challenge admit at most one valid response up to negligible probability,
+it subsumes the anti-malleability role of $\OTSScheme$ in the generic construction.
+
+The PLONK's arithmetization induces a two-phase witness structure.
+Witnesses available before the random challenges $\alpha, \beta$ are committed first.
+Witnesses determined by $\alpha, \beta$ are committed in a second phase.
+This requires a targeted modification to ZKBoo's decomposition,
+detailed in Section~\ref{section:overview-lattice-sms}.
+The resulting signature size is quasilinear in the gate count of $F$
+and linear in the number of multiplications of $G$ and $P$,
+with a $\log q$ overhead arising from the binary decomposition
+required to parse field elements into the binary representation
+compatible with the lattice-based primitives.
+This framework also supports richer instantiations via
+advanced MPCitH
+techniques~\cite{EC:AGHHJY23,AC:AHJMRY23,PKC:BauNof20,EC:CarCouJou23,CCS:CDGORR17,CCS:KatKolWan18,CCS:DelOrsTan21,CRYPTO:FenJouRiv22}
+and vector oblivious linear evaluation in the head (VOLEitH)
+techniques~\cite{CRYPTO:BBdSKORS23,ACISP:Bui25,PKC:CLYYYZ24,AC:OTX24}.
+
+Benchmarking with concrete parameter selection is deferred to future work.
+See Section~\ref{section:overview-lattice-sms} and
+\ifcameraready the full version~\cite{full}
+\else Appendix~\ref{appendix:lattice-sms}
+\fi for details
+of these building blocks.

@@ -1,0 +1,107 @@
+% !TEX root = main.tex
+\subsection{Instantiation Overview}
+\label{subsection:overview-lattice-sms-description}
+
+\noindent\textbf{Primitive choices.}
+The generic construction is instantiated with
+LP PKE~\cite{RSA:LinPei11} ($\EncryptionSchemeLP$) as $\EncryptionScheme$,
+whose simple structure based on the learning-with-errors assumption is compatible with ZKBoo's arithmetic circuit proofs;
+JRS signatures~\cite{CRYPTO:JeuRouSan23} ($\SignatureSchemeStandardJRS$) as~$\SignatureScheme$,
+whose lattice-based signing keys support efficient zero-knowledge membership proofs;
+and ZKBoo~\cite{USENIX:GiaMadOrl16} as the NIZKAoK,
+with all computations over $\ZZq$ for a prime $q$.
+KTX commitments~\cite{AC:KawTanXag08} replace the per-user key pair.
+%when we describe membership key below.
+
+\medskip
+\noindent\textbf{OTS elimination.}
+Because ZKBoo satisfies simulation-sound extractability with quasi-unique
+response~\cite{INDOCRYPT:FKMV12},
+it subsumes the anti-malleability role of the one-time signature $\OTSScheme$
+required in the generic construction:
+any adversary modifying a ZKBoo proof cannot produce a second valid proof
+for a different statement without breaking the quasi-unique response property.
+Retaining $\OTSScheme$ in the lattice setting would require a fresh key pair
+and an additional signature over all components per signing,
+increasing both signature size and signing cost;
+ZKBoo's quasi-unique response gives the same guarantee at no extra cost.
+Consequently, $(\vkattr, \skattr)$ no longer serves as a one-time signing key pair
+for $\ovk$, but is still required for membership proofs.
+
+\medskip
+\noindent\textbf{Membership key via KTX.}
+Following the KTX commitment 
+\ifcameraready 
+paradigm~\cite{AC:KawTanXag08},
+\else 
+paradigm~\cite{AC:KawTanXag08} (recalled in 
+Appendix~\ref{subappendix:ktx-commitment}),
+\fi
+we enforce the relationship
+$\vkattr = \bin(\bH \cdot \skattr)$,
+where $\bH \in \ZZq^{n \times m}$ is public and random,
+$\bin(\cdot)$ denotes binary decomposition,
+and $\skattr$ is a uniformly random binary vector chosen by the enrolling user.
+By the security of the KTX commitment, $\vkattr$ computationally hides $\skattr$;
+by the hardness of the short integer solution problem, no adversary seeing $\vkattr$ can recover a binary preimage.
+
+\medskip
+\noindent\textbf{Relation $\RelationLatticeSMS$.}
+The NIZKAoK proves membership in a relation $\RelationLatticeSMS$
+containing two classes of constraints.
+
+\begin{enumerate}
+\item \emph{Lattice-based constraints.}
+These enforce binary-vector structure, small $\ell_\infty$-norm bounds,
+and linear relationships over $\ZZq$.
+Binary-vector structure is captured by $\innerproduct{\bv}{\bone - \bv} = \bzero$.
+Small-norm bounds are handled via the following binary decomposition lemma.
+
+\begin{lemma}[Binary decomposition,
+	{\cite{PKC:LNSW13}}, {\cite[Appendix~A.1]{ACNS:HLTW25}}]%
+	\label{lemma:binary-basis-for-value-v}
+Let $v \in \NN$ and $k = \lfloor \log_2 v \rfloor + 1$.
+Define the basis
+$\BinaryBasis_v = \{B_i\}_{i = 1}^k = \{2^i\}_{i = 0}^{k - 1} \cup \{v - (2^{k - 1} - 1)\}$.
+Then $x \in [0, v]$ if and only if there exist bits $b_1, \ldots, b_k$
+satisfying $x = \sum_{i = 1}^k b_i B_i$.
+\end{lemma}
+
+Using Lemma~\ref{lemma:binary-basis-for-value-v},
+each bound $\|\ba\|_\infty \leq u$ is reduced to binary-vector
+and linear constraints,
+compatible with ZKBoo's arithmetic circuit satisfiability.
+The proof of Lemma~\ref{lemma:binary-basis-for-value-v} is deferred to
+\ifcameraready the full version.
+\else Appendix~\ref{subappendix:preliminaries-proof-of-auxiliary-lemma}.
+\fi
+
+\item \emph{Circuit satisfiability constraints.}
+These enforce $P(F(\cdot), G(\cdot))$
+and any auxiliary public circuits are
+correctly evaluated,
+including the circuit checking $\op \in \OpeningSetSignable$.
+The $P(\cdot, \cdot)$ part is handled by the PLONK reduction
+of Section~\ref{section:proving-function-evaluations-via-plonk}.
+\end{enumerate}
+
+The full relation $\RelationLatticeSMS$ is 
+\ifcameraready 
+also deferred to the full version.
+\else 
+deferred to
+\eqref{equation:relation-l-sms} in Appendix~\ref{subappendix:lattice-sms-description}.
+\fi
+
+\medskip
+\noindent\textbf{ZKBoo as the NIZKAoK.}
+ZKBoo proves arithmetic circuit satisfiability and is plausibly post-quantum.
+Proving $\RelationLatticeSMS$ requires the hidden-circuit strategy of
+Section~\ref{section:proving-function-evaluations-via-plonk},
+which introduces additional challenges $\alpha, \beta \uniformly \ZZq$
+that must be generated from the random oracle after the prover commits to $\witpre$.
+The Fiat-Shamir transform~\cite{CRYPTO:FiaSha86} makes the protocol non-interactive;
+however, the standard ZKBoo decomposition must be modified to accommodate
+the two-phase witness structure $(\witpre, \witsuf)$.
+Section~\ref{subsection:overview-lattice-sms-modifying-zkboo} describes this modification.
+The result is a plausibly post-quantum \SMS scheme enforcing hidden arithmetic policies with per-signature modal accountability.
